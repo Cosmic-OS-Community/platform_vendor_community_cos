@@ -187,6 +187,11 @@ else
     COS_RELEASE=false
 endif
 
+ifeq ($(COS_CB), true)
+	COS_BUILD_TYPE := COMMUNITY
+	COSMIC_VERSION_CODENAME := COMMUNITY
+endif
+
 ifeq ($(COS_RELEASE),true)
     ifeq ($(COS_BIWEEKLY),true)
       COS_BUILD_TYPE := BIWEEKLY
@@ -223,6 +228,8 @@ PRODUCT_GENERIC_PROPERTIES += \
     ro.mod.version=$(COS_VER) \
     ro.cos.releasetype=$(COS_BUILD_TYPE)
 
+
+
 ifeq ($(COS_RELEASE),true)
     CURRENT_DEVICE=$(shell echo "$(TARGET_PRODUCT)" | cut -d'_' -f 2,3)
     LIST = $(shell curl -s https://raw.githubusercontent.com/Cosmic-OS/platform_vendor_cos/oreo-mr1/cos.devices)
@@ -238,6 +245,23 @@ ifeq ($(COS_RELEASE),true)
         persist.ota.romname=$(TARGET_PRODUCT) \
         persist.ota.version=$(shell date +%Y%m%d) \
         persist.ota.manifest=https://raw.githubusercontent.com/Cosmic-OS/platform_vendor_ota/oreo-mr1/$(shell echo "$(TARGET_PRODUCT)" | cut -d'_' -f 2,3).xml
+endif
+
+ifeq ($(COS_CB),true)
+    CURRENT_DEVICE=$(shell echo "$(TARGET_PRODUCT)" | cut -d'_' -f 2,3)
+    LIST = $(shell curl -s https://raw.githubusercontent.com/Cosmic-OS-Community/platform_vendor_community_cos/master/cos.devices)
+    FOUND_DEVICE =  $(filter $(CURRENT_DEVICE), $(LIST))
+    ifeq ($(FOUND_DEVICE),$(CURRENT_DEVICE))
+      IS_OFFICIAL=true
+    endif
+    ifneq ($(IS_OFFICIAL), true)
+       COS_CB=false
+       $(error Device is not official "$(FOUND)")
+    endif
+    PRODUCT_GENERIC_PROPERTIES += \
+        persist.ota.romname=$(TARGET_PRODUCT) \
+        persist.ota.version=$(shell date +%Y%m%d) \
+        persist.ota.manifest=https://raw.githubusercontent.com/Cosmic-OS-Community/platform_vendor_community_ota/master/$(shell echo "$(TARGET_PRODUCT)" | cut -d'_' -f 2,3).xml
 endif
 
 $(call inherit-product-if-exists, vendor/extra/product.mk)
